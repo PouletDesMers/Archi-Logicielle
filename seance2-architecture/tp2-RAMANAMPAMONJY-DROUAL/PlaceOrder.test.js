@@ -29,6 +29,7 @@ test('une commande valide est enregistrée et notifiée', async () => {
     ],
   });
   assert.equal(order.total, 25);
+  assert.equal(order.statut, 'PAYEE');
   assert.equal((await repo.findById('CMD-TEST')).customerId, 'C1');
   assert.deepEqual(sent, ['CMD-TEST']);
 });

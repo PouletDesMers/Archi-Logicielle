@@ -18,8 +18,14 @@ export class PlaceOrder {
       if (unitPrice === undefined) throw new Error(`Produit inconnu : ${sku}`);
       return { sku, qty, unitPrice };
     });
-    const order = new Order(this.ids.next(), customerId, lines, this.clock.now());
+    const order = new Order({
+      id: this.ids.next(),
+      customerId,
+      lines,
+      createdAt: this.clock.now(),
+    });
     await this.payment.pay(order);
+    order.marquerPayee();
     await this.orderRepository.save(order);
     await this.notifier.orderPlaced(order);
     return order;
