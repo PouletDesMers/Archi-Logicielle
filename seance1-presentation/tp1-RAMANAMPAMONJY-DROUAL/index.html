@@ -16,6 +16,10 @@
       .error {
         color: #c8483f;
       }
+      .actif {
+        font-weight: bold;
+        background-color: yellow;
+      }
       li {
         margin: 6px 0;
       }
@@ -28,6 +32,11 @@
         <input placeholder="Nouvelle tâche" autofocus /> <button>Ajouter</button>
       </form>
       <p class="error"></p>
+      <nav aria-label="Filtrer les tâches">
+        <button type="button" data-filtre="toutes">Toutes</button>
+        <button type="button" data-filtre="faites">Faites</button>
+        <button type="button" data-filtre="a-faire">À faire</button>
+      </nav>
       <ul></ul>
       <p class="counter"></p>
     </div>
