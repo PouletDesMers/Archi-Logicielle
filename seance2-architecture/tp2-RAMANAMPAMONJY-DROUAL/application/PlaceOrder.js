@@ -2,7 +2,7 @@
 // Il dépend de PORTS SORTANTS injectés, décrits ici par leur contrat :
 //   orderRepository : { save(order), findById(id) }
 //   catalog         : { priceOf(sku) }            -> prix unitaire ou undefined
-//   payment         : { pay(order) }
+//   payment         : { charge({ orderId, amount }) } -> { ok: true } ou { ok: false, reason }
 //   notifier        : { orderPlaced(order) }
 //   clock / ids     : { now() } / { next() }       -> rend le code déterministe en test
 import { Order } from '../domain/Order.js';
@@ -24,10 +24,16 @@ export class PlaceOrder {
       lines,
       createdAt: this.clock.now(),
     });
-    await this.payment.pay(order);
-    order.marquerPayee();
+
+    const payment = await this.payment.charge({
+      orderId: order.id,
+      amount: order.total,
+    });
+    if (payment.ok) order.marquerPayee();
+    else order.marquerRefusee(payment.reason);
+
     await this.orderRepository.save(order);
-    await this.notifier.orderPlaced(order);
+    if (order.statut === 'PAYEE') await this.notifier.orderPlaced(order);
     return order;
   }
 }

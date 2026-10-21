@@ -5,6 +5,6 @@ export class InMemoryOrderRepository {
     this.#orders.set(order.id, order);
   }
   async findById(id) {
-    return this.#orders.get(id);
+    return this.#orders.get(id) ?? null;
   }
 }

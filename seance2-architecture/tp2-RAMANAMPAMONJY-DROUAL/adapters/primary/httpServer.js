@@ -13,7 +13,7 @@ export function createHttpServer({ placeOrder, orderRepository }) {
         let raw = '';
         for await (const chunk of req) raw += chunk;
         const order = await placeOrder.handle(JSON.parse(raw || '{}'));
-        return send(201, order);
+        return send(order.statut === 'PAYEE' ? 201 : 402, order);
       }
       const m = req.url.match(/^\/orders\/([\w-]+)$/);
       if (req.method === 'GET' && m) {
