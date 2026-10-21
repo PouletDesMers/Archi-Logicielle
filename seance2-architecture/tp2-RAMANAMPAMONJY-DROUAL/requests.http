@@ -1,0 +1,23 @@
+### Requêtes de test pour l'API hexagonale (extension VS Code « REST Client »)
+### Démarrer d'abord le serveur : npm run hexa:server
+
+### Créer une commande valide
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{ "customerId": "C-42", "items": [{ "sku": "CLAVIER", "qty": 2 }, { "sku": "SOURIS", "qty": 1 }] }
+
+### Lire la commande créée
+GET http://localhost:3000/orders/CMD-0001
+
+### Produit inconnu -> 400
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{ "customerId": "C-42", "items": [{ "sku": "TELE", "qty": 1 }] }
+
+### Commande vide -> 400 (règle du domaine)
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{ "customerId": "C-42", "items": [] }
