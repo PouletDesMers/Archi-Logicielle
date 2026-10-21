@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>MVC – Todo-list</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 40px auto;
+      }
+      .done {
+        text-decoration: line-through;
+        color: #888;
+      }
+      .error {
+        color: #c8483f;
+      }
+      li {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Todo-list (MVC)</h1>
+    <div id="app">
+      <form>
+        <input placeholder="Nouvelle tâche" autofocus /> <button>Ajouter</button>
+      </form>
+      <p class="error"></p>
+      <ul></ul>
+      <p class="counter"></p>
+    </div>
+    <script type="module">
+      import { TodoModel } from './TodoModel.js';
+      import { TodoView } from './TodoView.js';
+      import { TodoController } from './TodoController.js';
+      new TodoController(new TodoModel(), new TodoView(document.getElementById('app')));
+    </script>
+  </body>
+</html>

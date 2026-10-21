@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>MVVM – Panier</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 40px auto;
+      }
+      button {
+        margin: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Panier (MVVM)</h1>
+    <div id="catalog"></div>
+    <h2>
+      Panier : <span id="count"></span> article(s), total <span id="total"></span>
+    </h2>
+    <ul id="items"></ul>
+    <script type="module">
+      import { CartViewModel } from './CartViewModel.js';
+      const vm = new CartViewModel();
+      const products = [
+        { name: 'Livre', price: 25 },
+        { name: 'Clavier', price: 49 },
+        { name: 'Souris', price: 19 },
+      ];
+
+      // VUE : uniquement du « binding » vers le ViewModel.
+      for (const p of products) {
+        const b = document.createElement('button');
+        b.textContent = `+ ${p.name} (${p.price} €)`;
+        b.onclick = () => vm.addItem(p); // commande
+        catalog.append(b);
+      }
+      vm.count.subscribe(n => (count.textContent = n)); // liaison de données
+      vm.total.subscribe(t => (total.textContent = `${t} €`));
+      vm.items.subscribe(list => {
+        items.innerHTML = '';
+        list.forEach((p, i) => {
+          const li = document.createElement('li');
+          li.textContent = `${p.name} – ${p.price} € `;
+          const del = document.createElement('button');
+          del.textContent = 'retirer';
+          del.onclick = () => vm.removeAt(i);
+          li.append(del);
+          items.append(li);
+        });
+      });
+    </script>
+  </body>
+</html>

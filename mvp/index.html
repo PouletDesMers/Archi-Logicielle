@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>MVP – Connexion</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 420px;
+        margin: 40px auto;
+      }
+      input {
+        display: block;
+        margin: 8px 0;
+        width: 100%;
+        padding: 6px;
+      }
+      .msg.err {
+        color: #c8483f;
+      }
+      .msg.ok {
+        color: #2e8b57;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Connexion (MVP)</h1>
+    <p>Compte de test : <code>demo@ecole.fr</code> / <code>1234</code></p>
+    <form id="login">
+      <input id="email" placeholder="Email" />
+      <input id="pwd" type="password" placeholder="Mot de passe" />
+      <button id="btn">Se connecter</button>
+    </form>
+    <p class="msg" id="msg"></p>
+    <script type="module">
+      import { LoginPresenter } from './LoginPresenter.js';
+      import { FakeAuthService } from './FakeAuthService.js';
+
+      // VUE PASSIVE : implémente l'interface attendue, aucune logique.
+      class LoginView {
+        getCredentials() {
+          return { email: email.value, pwd: pwd.value };
+        }
+        showError(m) {
+          msg.className = 'msg err';
+          msg.textContent = m;
+        }
+        showSuccess(m) {
+          msg.className = 'msg ok';
+          msg.textContent = m;
+        }
+        setLoading(b) {
+          btn.disabled = b;
+          btn.textContent = b ? 'Connexion…' : 'Se connecter';
+        }
+      }
+      const presenter = new LoginPresenter(new LoginView(), new FakeAuthService());
+      login.addEventListener('submit', e => {
+        e.preventDefault();
+        presenter.onSubmit();
+      });
+    </script>
+  </body>
+</html>
