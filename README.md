@@ -1,5 +1,7 @@
 # Architecture Logicielle – exemples exécutables (M1 Tronc Commun · INGETIS)
 
+Clément DROUAL <br> Riantsoa Lahatriniaina RAMANAMPAMONJY 
+
 Prérequis : Node.js 20 ou plus récent (version LTS recommandée). Aucune dépendance à installer.
 
 ```bash
