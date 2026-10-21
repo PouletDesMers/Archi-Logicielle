@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>MVC – Todo-list</title>
+    <title>MVVM – Todo-list</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
@@ -26,7 +26,7 @@
     </style>
   </head>
   <body>
-    <h1>Todo-list (MVC)</h1>
+    <h1>Todo-list (MVVM)</h1>
     <div id="app">
       <form>
         <input placeholder="Nouvelle tâche" autofocus /> <button>Ajouter</button>
@@ -41,10 +41,49 @@
       <p class="counter"></p>
     </div>
     <script type="module">
-      import { TodoModel } from './TodoModel.js';
-      import { TodoView } from './TodoView.js';
-      import { TodoController } from './TodoController.js';
-      new TodoController(new TodoModel(), new TodoView(document.getElementById('app')));
+      import { TodoViewModel } from './TodoViewModel.js';
+
+      const vm = new TodoViewModel();
+      const form = document.querySelector('form');
+      const titre = document.querySelector('form input');
+      const liste = document.querySelector('ul');
+      const compteur = document.querySelector('.counter');
+      const erreur = document.querySelector('.error');
+      const filtres = document.querySelectorAll('[data-filtre]');
+
+      form.onsubmit = event => {
+        event.preventDefault();
+        vm.ajouter(titre.value);
+        titre.value = '';
+      };
+      filtres.forEach(bouton => {
+        bouton.onclick = () => vm.changerFiltre(bouton.dataset.filtre);
+      });
+      vm.erreur.subscribe(message => (erreur.textContent = message));
+      vm.restantes.subscribe(nombre => (compteur.textContent = `${nombre} tâche(s) à faire`));
+      vm.filtre.subscribe(nom => {
+        filtres.forEach(bouton => bouton.classList.toggle('actif', bouton.dataset.filtre === nom));
+      });
+      vm.visibles.subscribe(todos => {
+        liste.innerHTML = '';
+        todos.forEach(todo => {
+          const element = document.createElement('li');
+          const caseACocher = document.createElement('input');
+          const texte = document.createElement('span');
+          const supprimer = document.createElement('button');
+
+          caseACocher.type = 'checkbox';
+          caseACocher.checked = todo.done;
+          caseACocher.onchange = () => vm.basculer(todo.id);
+          texte.textContent = todo.title;
+          texte.classList.toggle('done', todo.done);
+          supprimer.type = 'button';
+          supprimer.textContent = '✕';
+          supprimer.onclick = () => vm.supprimer(todo.id);
+          element.append(caseACocher, ' ', texte, ' ', supprimer);
+          liste.append(element);
+        });
+      });
     </script>
   </body>
 </html>
