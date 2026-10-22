@@ -1,5 +1,3 @@
-// Façade : l'appelant ne voit ni les adapters, ni les retries, ni le cache.
-// Une seule porte d'entrée pour « combien coûte l'envoi de cette commande ? ».
 const ZIP = /^\d{5}$/;
 
 function assertOrder(order) {
@@ -30,7 +28,6 @@ export class ShippingService {
     for (const quoter of quoters) this.use(quoter);
   }
 
-  /** Ajoute un transporteur (adapter nu ou empilement de décorateurs). */
   use(quoter) {
     if (typeof quoter?.quote !== 'function') {
       throw new TypeError('ShippingService : un devis doit exposer quote()');
@@ -43,7 +40,6 @@ export class ShippingService {
     return this.#quoters.map((quoter) => quoter.name);
   }
 
-  /** Tous les devis ; un transporteur en échec ne fait pas tomber les autres. */
   async quotes(order) {
     assertOrder(order);
     const settled = await Promise.allSettled(this.#quoters.map((q) => q.quote(order)));

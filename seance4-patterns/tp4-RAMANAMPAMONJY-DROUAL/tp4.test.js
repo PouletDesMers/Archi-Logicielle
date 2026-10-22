@@ -1,4 +1,3 @@
-// Vérification du TP 4 : node --test seance4-patterns/tp4-RAMANAMPAMONJY-DROUAL/tp4.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -16,85 +15,76 @@ import { ShippingService } from './shipping/ShippingService.js';
 import { DhlClient } from '../tp4/carrierApis.js';
 
 const ORDER = { weightKg: 1.2, zip: '75011' };
-const MESSAGE = { to: 'logistique@shoplite.fr', subject: 'Devis transport', body: 'Colis 1.2 kg' };
-
-// --- Builder ----------------------------------------------------------------
+const MESSAGE = { to: 'logistique@shoplite.fr', body: 'Colis 1.2 kg', priority: 'normal' };
 
 test('MessageBuilder construit un message figé', () => {
   const message = MessageBuilder.create()
     .to('a@b.fr')
-    .subject('  Devis  ')
     .line('ligne 1')
-    .line('ligne 2')
+    .line('  ligne 2  ')
     .priority('high')
     .build();
 
-  assert.deepEqual(message, {
-    to: 'a@b.fr',
-    subject: 'Devis',
-    body: 'ligne 1\nligne 2',
-    priority: 'high',
-  });
+  assert.deepEqual(message, { to: 'a@b.fr', body: 'ligne 1\nligne 2', priority: 'high' });
   assert.ok(Object.isFrozen(message));
 });
 
-test('MessageBuilder refuse un message sans sujet ou sans corps', () => {
-  assert.throws(() => MessageBuilder.create().body('x').build(), /sujet manquant/);
-  assert.throws(() => MessageBuilder.create().subject('x').build(), /corps manquant/);
+test('MessageBuilder refuse un message sans corps', () => {
+  assert.throws(() => MessageBuilder.create().to('a@b.fr').build(), /corps manquant/);
 });
 
 test('MessageBuilder refuse une priorité inconnue', () => {
   assert.throws(() => MessageBuilder.create().priority('urgent'), /priorité inconnue/);
 });
 
-// --- Canaux : fabrique ouverte ---------------------------------------------
-
-test('createChannel("email") envoie et garde une copie', () => {
-  const email = createChannel('email');
-  const receipt = email.send(MESSAGE);
-
-  assert.equal(receipt.channel, 'email');
-  assert.equal(receipt.to, 'logistique@shoplite.fr');
-  assert.equal(email.sent.length, 1);
+test('Channel.send() est une méthode abstraite', () => {
+  assert.throws(() => new Channel().send(MESSAGE), /méthode abstraite/);
 });
 
-test('un canal inconnu est refusé avec la liste des canaux', () => {
-  assert.throws(() => createChannel('fax'), /Canal inconnu : « fax » \(disponibles : .*email/);
+test('un canal par type renvoie le texte attendu', () => {
+  assert.equal(createChannel('email').send(MESSAGE), '[EMAIL → logistique@shoplite.fr] Colis 1.2 kg');
+  assert.equal(createChannel('sms').send(MESSAGE), '[SMS → logistique@shoplite.fr] Colis 1.2 kg');
+  assert.equal(createChannel('push').send(MESSAGE), '[PUSH → logistique@shoplite.fr] Colis 1.2 kg');
 });
 
-test('le canal Slack existe sans avoir modifié channels.js', () => {
-  const slack = createChannel('slack', { username: 'logistique' });
-  const receipt = slack.send(MESSAGE);
+test('le SMS est tronqué à 160 caractères', () => {
+  const text = createChannel('sms').send({ to: '+33600000000', body: 'a'.repeat(200) });
+  assert.equal(text, `[SMS → +33600000000] ${'a'.repeat(160)}`);
+});
 
-  assert.equal(receipt.channel, 'slack');
-  assert.equal(receipt.username, 'logistique');
-  assert.equal(receipt.text, '*Devis transport*\nColis 1.2 kg');
+test('un type inconnu est refusé avec la liste des canaux', () => {
+  assert.throws(() => createChannel('fax'), /Canal inconnu : fax \(disponibles : .*email/);
+});
+
+test('le canal Slack est disponible après import de slack.js', () => {
   assert.ok(availableChannels().includes('slack'));
+  assert.equal(
+    createChannel('slack').send({ ...MESSAGE, to: 'transport' }),
+    '[SLACK #transport] Colis 1.2 kg',
+  );
 });
 
-test('registerChannel ajoute (et retire) un canal à la volée', () => {
+test('registerChannel ajoute un canal, le retire, et refuse une classe invalide', () => {
   class FaxChannel extends Channel {
-    constructor() {
-      super('fax');
-    }
-    send(message) {
-      return { channel: this.name, body: message.body };
+    send({ to, body }) {
+      return `[FAX → ${to}] ${body}`;
     }
   }
 
-  const unregister = registerChannel('fax', () => new FaxChannel());
-  assert.deepEqual(createChannel('fax').send(MESSAGE), { channel: 'fax', body: 'Colis 1.2 kg' });
+  const unregister = registerChannel('fax', FaxChannel);
+  assert.equal(createChannel('fax').send(MESSAGE), '[FAX → logistique@shoplite.fr] Colis 1.2 kg');
 
   unregister();
   assert.throws(() => createChannel('fax'), /Canal inconnu/);
-});
 
-// --- Adapters ---------------------------------------------------------------
+  assert.throws(() => registerChannel('x', class PasUnCanal {}), /héritant de Channel/);
+  assert.throws(() => registerChannel('y', () => new Channel()), /héritant de Channel/);
+});
 
 test('ColissimoAdapter : grammes et centimes convertis vers kg/euros', async () => {
   assert.deepEqual(await new ColissimoAdapter().quote(ORDER), {
     carrier: 'colissimo',
-    priceEur: 7.95, // 495 + 1200 g × 0,25 = 795 centimes
+    priceEur: 7.95,
     transitDays: 2,
   });
 });
@@ -102,7 +92,7 @@ test('ColissimoAdapter : grammes et centimes convertis vers kg/euros', async () 
 test('DhlAdapter : montant texte et appel asynchrone normalisés', async () => {
   assert.deepEqual(await new DhlAdapter().quote(ORDER), {
     carrier: 'dhl',
-    priceEur: 9.8, // "9.80" -> 9.8
+    priceEur: 9.8,
     transitDays: 1,
   });
 });
@@ -115,8 +105,6 @@ test('DhlAdapter laisse remonter le 503 de l’API', async () => {
 test('ColissimoAdapter laisse remonter une erreur de l’API', async () => {
   await assert.rejects(() => new ColissimoAdapter().quote({ weightKg: 1, zip: '7501' }), /Code postal invalide/);
 });
-
-// --- Décorateurs ------------------------------------------------------------
 
 test('RetryQuote réessaie et finit par réussir', async () => {
   const client = new DhlClient({ failFirst: 1 });
@@ -146,7 +134,7 @@ test('CachedQuote ne rappelle l’API qu’une fois par commande', async () => {
   await quote.quote({ ...ORDER });
   await quote.quote({ weightKg: 2, zip: '75011' });
 
-  assert.equal(calls, 2); // même poids+CP = 1 appel, nouveau poids = 1 de plus
+  assert.equal(calls, 2);
 });
 
 test('CachedQuote ne mémorise pas un échec', async () => {
@@ -169,14 +157,12 @@ test('l’ordre des décorateurs compte : cache à l’extérieur du retry', asy
   const client = new DhlClient({ failFirst: 1 });
   const quote = new CachedQuote(new RetryQuote(new DhlAdapter({ client }), { attempts: 3 }));
 
-  await quote.quote(ORDER); // 1 échec + 1 succès
-  await quote.quote(ORDER); // servi par le cache
+  await quote.quote(ORDER);
+  await quote.quote(ORDER);
 
   assert.equal(client.calls, 2);
   assert.equal(quote.size, 1);
 });
-
-// --- Façade -----------------------------------------------------------------
 
 function buildService() {
   return new ShippingService({

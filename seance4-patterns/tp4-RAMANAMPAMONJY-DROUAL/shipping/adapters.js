@@ -1,12 +1,3 @@
-// Adapters : l'API des transporteurs est FOURNIE et NON MODIFIABLE.
-// On ne l'appelle jamais directement dans le métier : on la traduit vers
-// notre propre contrat de devis :
-//
-//   quote(order) -> Promise<{ carrier, priceEur, transitDays }>
-//   order = { weightKg, zip }
-//
-// Différences absorbées ici : unités (kg <-> g), monnaie (centimes <-> euros),
-// type (Number vs string), synchrone vs asynchrone, nom des paramètres.
 import { ColissimoApi, DhlClient } from '../../tp4/carrierApis.js';
 
 export class ColissimoAdapter {
@@ -19,7 +10,6 @@ export class ColissimoAdapter {
   }
 
   async quote({ weightKg, zip }) {
-    // kg -> grammes, et `zip` -> `codePostal` (l'API parle une autre langue).
     const poidsGrammes = Math.round(weightKg * 1000);
     const { prixCentimes, delaiJours } = this.api.tarif({ poidsGrammes, codePostal: zip });
     return {
@@ -40,7 +30,6 @@ export class DhlAdapter {
   }
 
   async quote({ weightKg, zip }) {
-    // L'API est asynchrone et renvoie un montant en texte ("9.80").
     const rate = await this.client.getRate(weightKg, zip);
     return {
       carrier: this.name,

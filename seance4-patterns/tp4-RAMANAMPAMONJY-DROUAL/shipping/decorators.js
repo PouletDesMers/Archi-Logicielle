@@ -1,11 +1,5 @@
-// Décorateurs de devis : même contrat que les adapters
-//   quote(order) -> Promise<{ carrier, priceEur, transitDays }>
-// Ils s'empilent sans que le décoré sache qu'on l'enrichit.
-// L'ordre de composition a un sens (voir PATTERNS.md).
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Réessaie un devis qui échoue (DHL répond parfois 503). */
 export class RetryQuote {
   #attempts;
   #delayMs;
@@ -46,7 +40,6 @@ export class RetryQuote {
   }
 }
 
-/** Garde en mémoire les devis déjà obtenus (clé = poids + code postal). */
 export class CachedQuote {
   #cache = new Map();
   #keyOf;
@@ -70,13 +63,12 @@ export class CachedQuote {
   async quote(order) {
     const key = this.#keyOf(order);
     if (!this.#cache.has(key)) {
-      // On mémorise la promesse : deux appels concurrents ne font qu'un aller-retour.
       this.#cache.set(key, this.inner.quote(order));
     }
     try {
       return await this.#cache.get(key);
     } catch (error) {
-      this.#cache.delete(key); // un échec ne doit pas être mis en cache
+      this.#cache.delete(key);
       throw error;
     }
   }
