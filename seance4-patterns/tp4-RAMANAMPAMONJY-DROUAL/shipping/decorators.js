@@ -1,4 +1,8 @@
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const methodOf = (inner) => inner?.getQuote ?? inner?.quote;
+const legacyQuote = (quote) => quote.price === undefined
+  ? quote
+  : { carrier: quote.carrier.toLowerCase(), priceEur: quote.price, transitDays: quote.days };
 
 export class RetryQuote {
   #attempts;
@@ -6,8 +10,8 @@ export class RetryQuote {
   #onRetry;
 
   constructor(inner, { attempts = 3, delayMs = 0, onRetry = () => {} } = {}) {
-    if (typeof inner?.quote !== 'function') {
-      throw new TypeError('RetryQuote : un devis (quote) est requis');
+    if (typeof methodOf(inner) !== 'function') {
+      throw new TypeError('RetryQuote : un devis (getQuote) est requis');
     }
     if (!Number.isInteger(attempts) || attempts < 1) {
       throw new RangeError(`RetryQuote : attempts doit être >= 1 (reçu ${attempts})`);
@@ -22,11 +26,11 @@ export class RetryQuote {
     return `${this.inner.name}+retry`;
   }
 
-  async quote(order) {
+  async getQuote(order) {
     let lastError;
     for (let attempt = 1; attempt <= this.#attempts; attempt++) {
       try {
-        return await this.inner.quote(order);
+        return await methodOf(this.inner).call(this.inner, order);
       } catch (error) {
         lastError = error;
         this.#onRetry({ attempt, error });
@@ -38,18 +42,22 @@ export class RetryQuote {
       { cause: lastError },
     );
   }
+
+  async quote(order) { return legacyQuote(await this.getQuote(order)); }
 }
 
 export class CachedQuote {
   #cache = new Map();
   #keyOf;
 
-  constructor(inner, { keyOf = (order) => `${order.weightKg}|${order.zip}` } = {}) {
-    if (typeof inner?.quote !== 'function') {
-      throw new TypeError('CachedQuote : un devis (quote) est requis');
+  constructor(inner, { ttlMs = 60000, now = Date.now, keyOf } = {}) {
+    if (typeof methodOf(inner) !== 'function') {
+      throw new TypeError('CachedQuote : un devis (getQuote) est requis');
     }
     this.inner = inner;
-    this.#keyOf = keyOf;
+    this.#keyOf = keyOf ?? ((order) => `${order.weightKg}|${order.zip}`);
+    this.ttlMs = ttlMs;
+    this.now = now;
   }
 
   get name() {
@@ -60,16 +68,21 @@ export class CachedQuote {
     return this.#cache.size;
   }
 
-  async quote(order) {
+  async getQuote(order) {
     const key = this.#keyOf(order);
-    if (!this.#cache.has(key)) {
-      this.#cache.set(key, this.inner.quote(order));
+    const cached = this.#cache.get(key);
+    if (cached && this.now() - cached.createdAt < this.ttlMs) {
+      return cached.promise;
     }
+    const promise = methodOf(this.inner).call(this.inner, order);
+    this.#cache.set(key, { promise, createdAt: this.now() });
     try {
-      return await this.#cache.get(key);
+      return await promise;
     } catch (error) {
-      this.#cache.delete(key);
+      if (this.#cache.get(key)?.promise === promise) this.#cache.delete(key);
       throw error;
     }
   }
+
+  async quote(order) { return legacyQuote(await this.getQuote(order)); }
 }

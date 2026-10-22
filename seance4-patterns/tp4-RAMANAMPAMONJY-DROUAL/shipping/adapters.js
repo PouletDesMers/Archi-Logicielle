@@ -1,40 +1,56 @@
 import { ColissimoApi, DhlClient } from '../../tp4/carrierApis.js';
 
 export class ColissimoAdapter {
-  constructor({ api = new ColissimoApi() } = {}) {
-    this.api = api;
+  constructor(api = new ColissimoApi()) {
+    this.api = api?.tarif ? api : api?.api ?? new ColissimoApi();
   }
 
-  get name() {
-    return 'colissimo';
+  async getQuote({ weightKg, zip }) {
+    const { prixCentimes, delaiJours } = this.api.tarif({
+      poidsGrammes: Math.round(weightKg * 1000),
+      codePostal: zip,
+    });
+    return Object.freeze({
+      carrier: 'Colissimo',
+      price: Math.round(prixCentimes) / 100,
+      days: delaiJours,
+    });
   }
 
-  async quote({ weightKg, zip }) {
-    const poidsGrammes = Math.round(weightKg * 1000);
-    const { prixCentimes, delaiJours } = this.api.tarif({ poidsGrammes, codePostal: zip });
+  async quote(parcel) {
+    const quote = await this.getQuote(parcel);
     return {
-      carrier: this.name,
-      priceEur: Math.round(prixCentimes) / 100,
-      transitDays: delaiJours,
+      carrier: quote.carrier.toLowerCase(),
+      priceEur: quote.price,
+      transitDays: quote.days,
     };
   }
+
+  get name() { return 'colissimo'; }
 }
 
 export class DhlAdapter {
-  constructor({ client = new DhlClient() } = {}) {
-    this.client = client;
+  constructor(client = new DhlClient()) {
+    this.client = client?.getRate ? client : client?.client ?? new DhlClient();
   }
 
-  get name() {
-    return 'dhl';
-  }
-
-  async quote({ weightKg, zip }) {
+  async getQuote({ weightKg, zip }) {
     const rate = await this.client.getRate(weightKg, zip);
+    return Object.freeze({
+      carrier: 'DHL',
+      price: Number(rate.amount),
+      days: rate.transitDays,
+    });
+  }
+
+  async quote(parcel) {
+    const quote = await this.getQuote(parcel);
     return {
-      carrier: this.name,
-      priceEur: Math.round(Number(rate.amount) * 100) / 100,
-      transitDays: rate.transitDays,
+      carrier: quote.carrier.toLowerCase(),
+      priceEur: quote.price,
+      transitDays: quote.days,
     };
   }
+
+  get name() { return 'dhl'; }
 }

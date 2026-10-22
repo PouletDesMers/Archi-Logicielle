@@ -23,14 +23,15 @@ const byDelay = (a, b) =>
 export class ShippingService {
   #quoters;
 
-  constructor({ quoters = [] } = {}) {
+  constructor(quoters = []) {
+    if (!Array.isArray(quoters)) quoters = quoters.quoters ?? [];
     this.#quoters = [];
     for (const quoter of quoters) this.use(quoter);
   }
 
   use(quoter) {
-    if (typeof quoter?.quote !== 'function') {
-      throw new TypeError('ShippingService : un devis doit exposer quote()');
+    if (typeof (quoter?.getQuote ?? quoter?.quote) !== 'function') {
+      throw new TypeError('ShippingService : un devis doit exposer getQuote()');
     }
     this.#quoters.push(quoter);
     return this;
@@ -42,12 +43,20 @@ export class ShippingService {
 
   async quotes(order) {
     assertOrder(order);
-    const settled = await Promise.allSettled(this.#quoters.map((q) => q.quote(order)));
+    const settled = await Promise.allSettled(
+      this.#quoters.map((q) => (q.getQuote ?? q.quote).call(q, order)),
+    );
     return settled.map((result, index) =>
       result.status === 'fulfilled'
-        ? result.value
+        ? result.value.price !== undefined
+          ? {
+              carrier: result.value.carrier.toLowerCase(),
+              priceEur: result.value.price,
+              transitDays: result.value.days,
+            }
+          : result.value
         : {
-            carrier: this.#quoters[index].name,
+            carrier: this.#quoters[index].name?.toLowerCase(),
             priceEur: null,
             transitDays: null,
             error: result.reason?.message ?? String(result.reason),
@@ -60,7 +69,25 @@ export class ShippingService {
   }
 
   async best(order) {
-    return (await this.available(order))[0] ?? null;
+    const best = (await this.available(order))[0] ?? null;
+    if (!best) throw new Error('Aucun transporteur disponible');
+    return best;
+  }
+
+  async bestQuote(order) {
+    const quotes = await this.#successfulQuotes(order);
+    if (quotes.length === 0) throw new Error('Aucun transporteur disponible');
+    return quotes.sort((a, b) => a.price - b.price || a.days - b.days)[0];
+  }
+
+  async #successfulQuotes(order) {
+    assertOrder(order);
+    const settled = await Promise.allSettled(
+      this.#quoters.map((q) => (q.getQuote ?? q.quote).call(q, order)),
+    );
+    return settled
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
   }
 
   async fastest(order) {
