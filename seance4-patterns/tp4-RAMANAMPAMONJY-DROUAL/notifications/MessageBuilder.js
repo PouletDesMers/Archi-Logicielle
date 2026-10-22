@@ -1,44 +1,45 @@
-export const PRIORITIES = Object.freeze(['low', 'normal', 'high']);
+export const PRIORITIES = Object.freeze(['basse', 'normale', 'haute']);
+
+const VARIABLE = /\{\{\s*([\w.-]+)\s*\}\}/g;
 
 export class MessageBuilder {
   #to;
-  #body = '';
-  #priority = 'normal';
-
-  static create() {
-    return new MessageBuilder();
-  }
+  #template = '';
+  #variables = new Map();
+  #priority = 'normale';
 
   to(value) {
     this.#to = value;
     return this;
   }
 
-  body(value) {
-    this.#body = String(value ?? '').trim();
+  template(value) {
+    this.#template = String(value ?? '').trim();
     return this;
   }
 
-  line(value) {
-    const l = String(value ?? '').trim();
-    if (l) this.#body = this.#body ? `${this.#body}\n${l}` : l;
+  with(name, value) {
+    this.#variables.set(name, value);
     return this;
   }
 
   priority(value) {
-    if (!PRIORITIES.includes(value)) {
-      throw new Error(`priorité inconnue : « ${value} » (attendu : ${PRIORITIES.join(', ')})`);
-    }
     this.#priority = value;
     return this;
   }
 
   build() {
-    if (!this.#body) throw new Error('MessageBuilder : corps manquant');
-    return Object.freeze({
-      to: this.#to,
-      body: this.#body,
-      priority: this.#priority,
+    if (!this.#to) throw new Error('Destinataire obligatoire');
+    if (!this.#template) throw new Error('Gabarit obligatoire');
+    if (!PRIORITIES.includes(this.#priority)) {
+      throw new Error(`Priorité invalide : ${this.#priority}`);
+    }
+
+    const body = this.#template.replace(VARIABLE, (_match, name) => {
+      if (!this.#variables.has(name)) throw new Error(`Variable manquante : ${name}`);
+      return String(this.#variables.get(name));
     });
+
+    return Object.freeze({ to: this.#to, body, priority: this.#priority });
   }
 }

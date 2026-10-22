@@ -10,9 +10,9 @@ contente de s'enregistrer à l'import. Et `registerChannel` vérifie que la clas
 
 ## Message : un builder
 
-`send(to, body, priority)` s'inverse facilement. Le builder rend l'appel lisible
-(`.to().line().priority()`), valide à `build()` et renvoie un objet figé : le message envoyé
-ne bouge plus.
+`send(to, body, priority)` s'inverse facilement. Le builder rend le message lisible
+(`.to().template().with().priority()`), remplit le gabarit à `build()` et renvoie un objet
+figé : le message envoyé ne bouge plus.
 
 ## Transporteurs : deux adapters, un contrat
 

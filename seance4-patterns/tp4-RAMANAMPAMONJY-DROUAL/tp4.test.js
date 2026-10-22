@@ -15,26 +15,58 @@ import { ShippingService } from './shipping/ShippingService.js';
 import { DhlClient } from '../tp4/carrierApis.js';
 
 const ORDER = { weightKg: 1.2, zip: '75011' };
-const MESSAGE = { to: 'logistique@shoplite.fr', body: 'Colis 1.2 kg', priority: 'normal' };
+const MESSAGE = { to: 'logistique@shoplite.fr', body: 'Colis 1.2 kg', priority: 'normale' };
 
-test('MessageBuilder construit un message figé', () => {
-  const message = MessageBuilder.create()
-    .to('a@b.fr')
-    .line('ligne 1')
-    .line('  ligne 2  ')
-    .priority('high')
+test('MessageBuilder remplit un gabarit et renvoie un message gelé', () => {
+  const message = new MessageBuilder()
+    .to('alice@exemple.fr')
+    .template('Bonjour {{nom}}, votre colis part avec {{transporteur}}.')
+    .with('nom', 'Alice')
+    .with('transporteur', 'Colissimo')
+    .priority('haute')
     .build();
 
-  assert.deepEqual(message, { to: 'a@b.fr', body: 'ligne 1\nligne 2', priority: 'high' });
+  assert.deepEqual(message, {
+    to: 'alice@exemple.fr',
+    body: 'Bonjour Alice, votre colis part avec Colissimo.',
+    priority: 'haute',
+  });
   assert.ok(Object.isFrozen(message));
 });
 
-test('MessageBuilder refuse un message sans corps', () => {
-  assert.throws(() => MessageBuilder.create().to('a@b.fr').build(), /corps manquant/);
+test('la priorité vaut « normale » par défaut', () => {
+  const message = new MessageBuilder().to('alice@exemple.fr').template('Bonjour').build();
+  assert.equal(message.priority, 'normale');
 });
 
-test('MessageBuilder refuse une priorité inconnue', () => {
-  assert.throws(() => MessageBuilder.create().priority('urgent'), /priorité inconnue/);
+test('toutes les méthodes renvoient le builder', () => {
+  const builder = new MessageBuilder();
+  assert.equal(builder.to('a@b.fr'), builder);
+  assert.equal(builder.template('Bonjour'), builder);
+  assert.equal(builder.with('nom', 'Alice'), builder);
+  assert.equal(builder.priority('basse'), builder);
+});
+
+test('destinataire absent', () => {
+  assert.throws(() => new MessageBuilder().template('Bonjour').build(), /Destinataire obligatoire/);
+});
+
+test('gabarit absent', () => {
+  assert.throws(() => new MessageBuilder().to('alice@exemple.fr').build(), /Gabarit obligatoire/);
+});
+
+test('priorité invalide', () => {
+  assert.throws(
+    () => new MessageBuilder().to('a@b.fr').template('Bonjour').priority('urgente').build(),
+    /Priorité invalide : urgente/,
+  );
+});
+
+test('variable du gabarit sans valeur', () => {
+  assert.throws(
+    () => new MessageBuilder().to('a@b.fr').template('Bonjour {{nom}}').build(),
+    /Variable manquante : nom/,
+  );
 });
 
 test('Channel.send() est une méthode abstraite', () => {

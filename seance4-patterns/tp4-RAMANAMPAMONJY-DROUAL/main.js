@@ -29,11 +29,15 @@ const fastest = await shipping.fastest(order);
 console.log(`Moins cher : ${best.carrier} — ${best.priceEur.toFixed(2)} € (${best.transitDays} j)`);
 console.log(`Plus rapide : ${fastest.carrier} — ${fastest.priceEur.toFixed(2)} € (${fastest.transitDays} j)`);
 
-const message = MessageBuilder.create()
-  .line(`Devis transport ${order.zip}`)
-  .line(`Colis de ${order.weightKg} kg.`)
-  .line(`Meilleure offre : ${best.carrier} à ${best.priceEur.toFixed(2)} € (${best.transitDays} j).`)
-  .priority('high')
+const message = new MessageBuilder()
+  .to('logistique@shoplite.fr')
+  .template('Devis transport {{zip}} : colis de {{poids}} kg. Meilleure offre : {{transporteur}} à {{prix}} € ({{delai}} j).')
+  .with('zip', order.zip)
+  .with('poids', order.weightKg)
+  .with('transporteur', best.carrier)
+  .with('prix', best.priceEur.toFixed(2))
+  .with('delai', best.transitDays)
+  .priority('haute')
   .build();
 
 const email = createChannel('email');
@@ -44,7 +48,7 @@ console.log('\nCanaux disponibles :', availableChannels().join(', '));
 console.log(email.send({ ...message, to: 'logistique@shoplite.fr' }));
 console.log(sms.send({ ...message, to: '+33600000000' }));
 console.log(slack.send({ ...message, to: 'transport' }));
-console.log(sms.send({ to: '+33600000000', body: 'x'.repeat(200), priority: 'low' }).slice(-20));
+console.log(sms.send({ to: '+33600000000', body: 'x'.repeat(200), priority: 'basse' }).slice(-20));
 
 await shipping.quotes(order);
 console.log('\nDevis mis en cache :', shipping.carriers.length, 'transporteur(s) servis sans appel réseau.');
