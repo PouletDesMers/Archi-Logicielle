@@ -1,0 +1,122 @@
+@startuml
+title <size:24>Container View: QueenBee</size>
+
+set separator none
+top to bottom direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Container
+  .Element-RWxlbWVudCxDb250YWluZXI= {
+    BackgroundColor: #438dd5;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,Database
+  .Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U= {
+    BackgroundColor: #1a5276;
+    LineColor: #123952;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Person
+  .Element-RWxlbWVudCxQZXJzb24= {
+    BackgroundColor: #08427b;
+    LineColor: #052e56;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System,Externe
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuZQ== {
+    BackgroundColor: #7f8c8d;
+    LineColor: #586262;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+  // QueenBee
+  .Boundary-UXVlZW5CZWU= {
+    BackgroundColor: #ffffff;
+    LineColor: #0b4884;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+  }
+</style>
+
+person "==Apicultrice\n<size:16>[Person]</size>\n\nInspecte les ruches sur le terrain, même hors ligne." <<Element-RWxlbWVudCxQZXJzb24=>> as Apicultrice
+person "==Vétérinaire apicole\n<size:16>[Person]</size>\n\nSurveille la santé des colonies et analyse les alertes sanitaires." <<Element-RWxlbWVudCxQZXJzb24=>> as Vétérinaireapicole
+person "==Coordinateur régional\n<size:16>[Person]</size>\n\nPlanifie les tournées et gère la logistique des ruchers." <<Element-RWxlbWVudCxQZXJzb24=>> as Coordinateurrégional
+person "==Responsable d'exploitation\n<size:16>[Person]</size>\n\nSupervise l'ensemble du parc, les comptes et les accès." <<Element-RWxlbWVudCxQZXJzb24=>> as Responsabledexploitation
+rectangle "==Réseau de Capteurs IoT\n<size:16>[Software System]</size>\n\nCapteurs de température, humidité et pesée de ruche." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuZQ==>> as RéseaudeCapteursIoT
+rectangle "==Fournisseur Météo\n<size:16>[Software System]</size>\n\nFournit les prévisions climatiques et alertes orages via API." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuZQ==>> as FournisseurMétéo
+rectangle "==Passerelle SMS / Push\n<size:16>[Software System]</size>\n\nEnvoie les SMS d'urgence sanitaire aux techniciens." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuZQ==>> as PasserelleSMSPush
+rectangle "==Fournisseur d'Identité OIDC\n<size:16>[Software System]</size>\n\nGestion centralisée des identités et authentification." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuZQ==>> as FournisseurdIdentitéOIDC
+
+rectangle "QueenBee\n<size:16>[Software System]</size>" <<Boundary-UXVlZW5CZWU=>> {
+  rectangle "==App Mobile Terrain\n<size:16>[Container: Flutter / SQLite]</size>\n\nSaisie des inspections hors-ligne et synchronisation." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.AppMobileTerrain
+  rectangle "==Portail Web Métier\n<size:16>[Container: React / TypeScript]</size>\n\nInterface de supervision, planification et analytics." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.PortailWebMétier
+  rectangle "==API Centrale\n<size:16>[Container: Node.js 22 / Fastify]</size>\n\nCœur métier et règles applicatives." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.APICentrale
+  database "==Base de Données Centrale\n<size:16>[Container: PostgreSQL 16]</size>\n\nStockage transactionnel principal (ruchers, inspections)." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as QueenBee.BasedeDonnéesCentrale
+  rectangle "==Message Broker\n<size:16>[Container: Mosquitto MQTT]</size>\n\nÉchange asynchrone des alertes et des mesures terrain." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.MessageBroker
+  rectangle "==Passerelle de Site (Edge)\n<size:16>[Container: Go / SQLite local]</size>\n\nCollecte locale LoRaWAN, cache et téléversement." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.PasserelledeSiteEdge
+  rectangle "==Moteur d'Escalade\n<size:16>[Container: Node.js Worker]</size>\n\nDéclenchement des alertes et escalades à 48h." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.MoteurdEscalade
+  database "==Stockage d'Objets\n<size:16>[Container: MinIO / S3]</size>\n\nStockage sécurisé des photos de cadres et rapports." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as QueenBee.StockagedObjets
+}
+
+QueenBee.APICentrale --> QueenBee.BasedeDonnéesCentrale <<Relationship-UmVsYXRpb25zaGlw>> : "Exécute requêtes et transactions\n<size:16>[SQL]</size>"
+QueenBee.APICentrale --> QueenBee.MessageBroker <<Relationship-UmVsYXRpb25zaGlw>> : "Souscrit aux topics d'alertes\n<size:16>[MQTT]</size>"
+QueenBee.AppMobileTerrain --> QueenBee.APICentrale <<Relationship-UmVsYXRpb25zaGlw>> : "Synchronise les inspections et lots de données\n<size:16>[HTTPS/JSON]</size>"
+QueenBee.PortailWebMétier --> QueenBee.APICentrale <<Relationship-UmVsYXRpb25zaGlw>> : "Consulte et administre les ruchers\n<size:16>[HTTPS/JSON]</size>"
+QueenBee.APICentrale --> QueenBee.StockagedObjets <<Relationship-UmVsYXRpb25zaGlw>> : "Lit et stocke les photos d'inspection\n<size:16>[S3 API]</size>"
+QueenBee.PasserelledeSiteEdge --> QueenBee.MessageBroker <<Relationship-UmVsYXRpb25zaGlw>> : "Publie les télémesures consolidées\n<size:16>[MQTT/TLS]</size>"
+QueenBee.MoteurdEscalade --> QueenBee.MessageBroker <<Relationship-UmVsYXRpb25zaGlw>> : "Consomme les événements sanitaires\n<size:16>[MQTT]</size>"
+QueenBee.MoteurdEscalade --> QueenBee.BasedeDonnéesCentrale <<Relationship-UmVsYXRpb25zaGlw>> : "Met à jour les alertes non traitées\n<size:16>[SQL]</size>"
+Apicultrice --> QueenBee.AppMobileTerrain <<Relationship-UmVsYXRpb25zaGlw>> : "Saisit les inspections\n<size:16>[UI locale]</size>"
+Vétérinaireapicole --> QueenBee.PortailWebMétier <<Relationship-UmVsYXRpb25zaGlw>> : "Consulte les indicateurs sanitaires\n<size:16>[HTTPS]</size>"
+Coordinateurrégional --> QueenBee.PortailWebMétier <<Relationship-UmVsYXRpb25zaGlw>> : "Planifie les tournées\n<size:16>[HTTPS]</size>"
+Responsabledexploitation --> QueenBee.PortailWebMétier <<Relationship-UmVsYXRpb25zaGlw>> : "Administre les comptes\n<size:16>[HTTPS]</size>"
+RéseaudeCapteursIoT --> QueenBee.PasserelledeSiteEdge <<Relationship-UmVsYXRpb25zaGlw>> : "Transmet les métriques de ruche\n<size:16>[LoRaWAN]</size>"
+QueenBee.APICentrale --> FournisseurMétéo <<Relationship-UmVsYXRpb25zaGlw>> : "Récupère les relevés météo\n<size:16>[HTTPS/JSON]</size>"
+QueenBee.MoteurdEscalade --> PasserelleSMSPush <<Relationship-UmVsYXRpb25zaGlw>> : "Déclenche l'envoi d'alertes critiques\n<size:16>[HTTPS/REST]</size>"
+QueenBee.APICentrale --> FournisseurdIdentitéOIDC <<Relationship-UmVsYXRpb25zaGlw>> : "Valide les jetons d'accès\n<size:16>[OIDC/JWT]</size>"
+
+@enduml

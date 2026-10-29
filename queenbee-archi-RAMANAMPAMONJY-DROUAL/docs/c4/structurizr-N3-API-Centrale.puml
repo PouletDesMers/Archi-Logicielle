@@ -1,0 +1,105 @@
+@startuml
+title <size:24>Component View: QueenBee - API Centrale</size>
+
+set separator none
+left to right direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Component
+  .Element-RWxlbWVudCxDb21wb25lbnQ= {
+    BackgroundColor: #85bbf0;
+    LineColor: #5d82a8;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #000000;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container
+  .Element-RWxlbWVudCxDb250YWluZXI= {
+    BackgroundColor: #438dd5;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,Database
+  .Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U= {
+    BackgroundColor: #1a5276;
+    LineColor: #123952;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+  // API Centrale
+  .Boundary-QVBJIENlbnRyYWxl {
+    BackgroundColor: #ffffff;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+  }
+  // QueenBee
+  .Boundary-UXVlZW5CZWU= {
+    BackgroundColor: #ffffff;
+    LineColor: #0b4884;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+  }
+</style>
+
+rectangle "QueenBee\n<size:16>[Software System]</size>" <<Boundary-UXVlZW5CZWU=>> {
+  rectangle "API Centrale\n<size:16>[Container: Node.js 22 / Fastify]</size>" <<Boundary-QVBJIENlbnRyYWxl>> {
+    rectangle "==Module IAM & Contexte\n<size:16>[Component: Node.js]</size>\n\nGestion des jetons, droits RBAC et sessions." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.ModuleIAMContexte
+    rectangle "==Module Inspections\n<size:16>[Component: Node.js]</size>\n\nLogique de synchronisation et détection des conflits." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.ModuleInspections
+    rectangle "==Module Santé & Ruches\n<size:16>[Component: Node.js]</size>\n\nGestion du statut sanitaire des colonies." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.ModuleSantéRuches
+    rectangle "==Module Planification\n<size:16>[Component: Node.js]</size>\n\nPlanification et assignation des tournées." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.ModulePlanification
+    rectangle "==Adaptateur Persistance\n<size:16>[Component: Prisma ORM]</size>\n\nCouche d'accès aux données PostgreSQL via repository." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.AdaptateurPersistance
+    rectangle "==Adaptateur Événements\n<size:16>[Component: MQTT Client]</size>\n\nConsommateur et producteur d'événements asynchrones." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as QueenBee.APICentrale.AdaptateurÉvénements
+  }
+
+  database "==Base de Données Centrale\n<size:16>[Container: PostgreSQL 16]</size>\n\nStockage transactionnel principal (ruchers, inspections)." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as QueenBee.BasedeDonnéesCentrale
+  rectangle "==Message Broker\n<size:16>[Container: Mosquitto MQTT]</size>\n\nÉchange asynchrone des alertes et des mesures terrain." <<Element-RWxlbWVudCxDb250YWluZXI=>> as QueenBee.MessageBroker
+}
+
+QueenBee.APICentrale.ModuleInspections --> QueenBee.APICentrale.AdaptateurPersistance <<Relationship-UmVsYXRpb25zaGlw>> : "Persiste les relevés d'inspection\n<size:16>[TypeScript]</size>"
+QueenBee.APICentrale.ModuleSantéRuches --> QueenBee.APICentrale.AdaptateurPersistance <<Relationship-UmVsYXRpb25zaGlw>> : "Met à jour le statut des ruches\n<size:16>[TypeScript]</size>"
+QueenBee.APICentrale.ModulePlanification --> QueenBee.APICentrale.AdaptateurPersistance <<Relationship-UmVsYXRpb25zaGlw>> : "Gère les plannings\n<size:16>[TypeScript]</size>"
+QueenBee.APICentrale.AdaptateurPersistance --> QueenBee.BasedeDonnéesCentrale <<Relationship-UmVsYXRpb25zaGlw>> : "Exécute requêtes et transactions\n<size:16>[SQL]</size>"
+QueenBee.APICentrale.AdaptateurÉvénements --> QueenBee.MessageBroker <<Relationship-UmVsYXRpb25zaGlw>> : "Souscrit aux topics d'alertes\n<size:16>[MQTT]</size>"
+QueenBee.APICentrale.ModuleSantéRuches --> QueenBee.APICentrale.AdaptateurÉvénements <<Relationship-UmVsYXRpb25zaGlw>> : "Publie changement de statut ruche\n<size:16>[TypeScript]</size>"
+
+@enduml
